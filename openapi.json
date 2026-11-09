@@ -1,0 +1,1358 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Hourora time zone API",
+        "version": "1.0.0",
+        "description": "The same engine that runs Hourora, as plain JSON: the time anywhere, conversions that know about daylight saving, every IANA zone and its clock changes. No key, no sign-up. IANA tzdata 2026f. 120 requests per minute per client.",
+        "termsOfService": "https://hourora.app/en/developers#terms",
+        "license": {
+            "name": "Free to use; attribution appreciated",
+            "url": "https://hourora.app/en/developers#terms"
+        }
+    },
+    "externalDocs": {
+        "description": "Documentation",
+        "url": "https://hourora.app/en/developers"
+    },
+    "servers": [
+        {
+            "url": "https://hourora.app/api/v1"
+        }
+    ],
+    "paths": {
+        "/time": {
+            "get": {
+                "operationId": "time",
+                "summary": "Current time",
+                "description": "The current time in a time zone or city: local time, UTC offset, abbreviation, daylight saving and the next clock change. Without parameters: UTC.",
+                "parameters": [
+                    {
+                        "name": "tz",
+                        "in": "query",
+                        "required": false,
+                        "description": "IANA time zone name, e.g. Europe/London. Aliases such as Asia/Calcutta are accepted and answered with the current name.",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Europe/London"
+                    },
+                    {
+                        "name": "city",
+                        "in": "query",
+                        "required": false,
+                        "description": "City slug instead of tz, e.g. london (find slugs with /cities).",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "london"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Time"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "A parameter is missing or not in the expected form.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No such time zone, city, country or endpoint.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Too many requests from your client; wait for the seconds in Retry-After.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/convert": {
+            "get": {
+                "operationId": "convert",
+                "summary": "Convert a time",
+                "description": "A wall-clock time in one zone shown in another. Reports when the time falls in a daylight-saving gap (it does not exist) or overlap (it happens twice).",
+                "parameters": [
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "required": true,
+                        "description": "Zone (or city slug) the time is read in.",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "America/New_York"
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "required": true,
+                        "description": "Zone (or city slug) to show it in.",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Asia/Kolkata"
+                    },
+                    {
+                        "name": "time",
+                        "in": "query",
+                        "required": false,
+                        "description": "Wall-clock time in the from zone, YYYY-MM-DDTHH:mm (seconds optional, no offset), 1970\u20132060. Default: now.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2})?$"
+                        },
+                        "example": "2026-10-16T15:00"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Conversion"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "A parameter is missing or not in the expected form.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No such time zone, city, country or endpoint.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Too many requests from your client; wait for the seconds in Retry-After.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/zones": {
+            "get": {
+                "operationId": "zones",
+                "summary": "List time zones",
+                "description": "Every IANA time zone with its current UTC offset, abbreviation, daylight-saving state, countries and main city.",
+                "parameters": [
+                    {
+                        "name": "country",
+                        "in": "query",
+                        "required": false,
+                        "description": "ISO 3166 country code, e.g. GB, to keep only that country.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z]{2}$"
+                        },
+                        "example": "GB"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ZoneList"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "A parameter is missing or not in the expected form.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No such time zone, city, country or endpoint.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Too many requests from your client; wait for the seconds in Retry-After.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/zones/{id}": {
+            "get": {
+                "operationId": "zone",
+                "summary": "One time zone",
+                "description": "One IANA zone: its aliases, countries and cities, its offset now, the next clock change and every change in a given year.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "IANA zone name; keep the slash or encode it as %2F.",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "America/New_York"
+                    },
+                    {
+                        "name": "year",
+                        "in": "query",
+                        "required": false,
+                        "description": "Year whose clock changes to list, 1970\u20132060. Default: this year.",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1970,
+                            "maximum": 2060
+                        },
+                        "example": "2027"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Zone"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "A parameter is missing or not in the expected form.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No such time zone, city, country or endpoint.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Too many requests from your client; wait for the seconds in Retry-After.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/cities": {
+            "get": {
+                "operationId": "cities",
+                "summary": "Search cities",
+                "description": "Cities whose name matches, best matches and largest cities first, each with its country, coordinates and time zone.",
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": true,
+                        "description": "Part of a city name, accents optional (at most 80 characters).",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 80
+                        },
+                        "example": "lond"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "description": "How many results, 1\u201350. Default 10.",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 50,
+                            "default": 10
+                        },
+                        "example": "3"
+                    },
+                    {
+                        "name": "country",
+                        "in": "query",
+                        "required": false,
+                        "description": "ISO 3166 country code, e.g. GB, to keep only that country.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z]{2}$"
+                        },
+                        "example": "GB"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CitySearch"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "A parameter is missing or not in the expected form.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No such time zone, city, country or endpoint.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Too many requests from your client; wait for the seconds in Retry-After.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/cities/{slug}": {
+            "get": {
+                "operationId": "city",
+                "summary": "One city",
+                "description": "One city by its slug, with its time zone's offset now and the next clock change.",
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "City slug, e.g. tokyo.",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "tokyo"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CityDetail"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "A parameter is missing or not in the expected form.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No such time zone, city, country or endpoint.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Too many requests from your client; wait for the seconds in Retry-After.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/lookup": {
+            "get": {
+                "operationId": "lookup",
+                "summary": "Coordinates to time zone",
+                "description": "The nearest listed city to a latitude and longitude, and its time zone. An approximation: zone borders are not modelled.",
+                "parameters": [
+                    {
+                        "name": "lat",
+                        "in": "query",
+                        "required": true,
+                        "description": "Latitude in decimal degrees, \u221290 to 90.",
+                        "schema": {
+                            "type": "number",
+                            "minimum": -90,
+                            "maximum": 90
+                        },
+                        "example": "48.85"
+                    },
+                    {
+                        "name": "lng",
+                        "in": "query",
+                        "required": true,
+                        "description": "Longitude in decimal degrees, \u2212180 to 180.",
+                        "schema": {
+                            "type": "number",
+                            "minimum": -180,
+                            "maximum": 180
+                        },
+                        "example": "2.35"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Lookup"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "A parameter is missing or not in the expected form.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No such time zone, city, country or endpoint.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Too many requests from your client; wait for the seconds in Retry-After.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tzdata": {
+            "get": {
+                "operationId": "tzdata",
+                "summary": "Data version",
+                "description": "Which IANA time zone database release the answers come from, and when Hourora last updated its data.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TzData"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "A parameter is missing or not in the expected form.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No such time zone, city, country or endpoint.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Too many requests from your client; wait for the seconds in Retry-After.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/openapi.json": {
+            "get": {
+                "operationId": "openapi",
+                "summary": "OpenAPI",
+                "description": "This API described in OpenAPI 3.1.",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Instant": {
+                "type": "object",
+                "properties": {
+                    "zone": {
+                        "type": "string"
+                    },
+                    "local": {
+                        "type": "string",
+                        "description": "Wall-clock time, YYYY-MM-DDTHH:mm:ss"
+                    },
+                    "iso": {
+                        "type": "string",
+                        "description": "RFC 3339 with offset"
+                    },
+                    "offsetMinutes": {
+                        "type": "integer",
+                        "description": "Minutes east of UTC"
+                    },
+                    "offset": {
+                        "type": "string",
+                        "example": "+05:30"
+                    },
+                    "utcOffset": {
+                        "type": "string",
+                        "example": "UTC+5:30"
+                    },
+                    "abbreviation": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "tzdata abbreviation when it has a letter one (CEST, IST, PDT), else null"
+                    },
+                    "dst": {
+                        "type": "boolean",
+                        "description": "Daylight saving in force"
+                    }
+                },
+                "required": [
+                    "zone",
+                    "local",
+                    "iso",
+                    "offsetMinutes",
+                    "offset",
+                    "utcOffset",
+                    "abbreviation",
+                    "dst"
+                ]
+            },
+            "Transition": {
+                "type": "object",
+                "properties": {
+                    "at": {
+                        "type": "string"
+                    },
+                    "unixMs": {
+                        "type": "integer"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "dst-start",
+                            "dst-end",
+                            "offset-change"
+                        ]
+                    },
+                    "fromOffsetMinutes": {
+                        "type": "integer"
+                    },
+                    "toOffsetMinutes": {
+                        "type": "integer"
+                    },
+                    "shiftMinutes": {
+                        "type": "integer"
+                    },
+                    "fromAbbreviation": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "toAbbreviation": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "localBefore": {
+                        "type": "string",
+                        "description": "Wall clock at the change, old offset"
+                    },
+                    "localAfter": {
+                        "type": "string",
+                        "description": "Wall clock at the change, new offset"
+                    }
+                },
+                "required": [
+                    "at",
+                    "unixMs",
+                    "type",
+                    "fromOffsetMinutes",
+                    "toOffsetMinutes",
+                    "shiftMinutes",
+                    "fromAbbreviation",
+                    "toAbbreviation",
+                    "localBefore",
+                    "localAfter"
+                ]
+            },
+            "Country": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "code",
+                    "name"
+                ]
+            },
+            "City": {
+                "type": "object",
+                "properties": {
+                    "slug": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "asciiName": {
+                        "type": "string"
+                    },
+                    "country": {
+                        "$ref": "#/components/schemas/Country"
+                    },
+                    "region": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "zone": {
+                        "type": "string"
+                    },
+                    "lat": {
+                        "type": "number"
+                    },
+                    "lng": {
+                        "type": "number"
+                    },
+                    "population": {
+                        "type": "integer"
+                    },
+                    "capital": {
+                        "type": "boolean"
+                    },
+                    "url": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "slug",
+                    "name",
+                    "asciiName",
+                    "country",
+                    "region",
+                    "zone",
+                    "lat",
+                    "lng",
+                    "population",
+                    "capital",
+                    "url"
+                ]
+            },
+            "Side": {
+                "type": "object",
+                "properties": {
+                    "utc": {
+                        "type": "string"
+                    },
+                    "unixMs": {
+                        "type": "integer"
+                    },
+                    "from": {
+                        "$ref": "#/components/schemas/Instant"
+                    },
+                    "to": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Instant"
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "dayOffset": {
+                                        "type": "integer",
+                                        "enum": [
+                                            -1,
+                                            0,
+                                            1
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "dayOffset"
+                                ]
+                            }
+                        ]
+                    },
+                    "differenceMinutes": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "utc",
+                    "unixMs",
+                    "from",
+                    "to",
+                    "differenceMinutes"
+                ]
+            },
+            "Error": {
+                "type": "object",
+                "properties": {
+                    "error": {
+                        "type": "object",
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "enum": [
+                                    "missing_parameter",
+                                    "invalid_parameter",
+                                    "unknown_zone",
+                                    "unknown_city",
+                                    "unknown_country",
+                                    "not_found",
+                                    "rate_limited",
+                                    "internal_error"
+                                ]
+                            },
+                            "message": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "code",
+                            "message"
+                        ]
+                    }
+                },
+                "required": [
+                    "error"
+                ]
+            },
+            "Time": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Instant"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "city": {
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/components/schemas/City"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ]
+                            },
+                            "utc": {
+                                "type": "string"
+                            },
+                            "unixMs": {
+                                "type": "integer"
+                            },
+                            "date": {
+                                "type": "string"
+                            },
+                            "time": {
+                                "type": "string"
+                            },
+                            "weekday": {
+                                "type": "string"
+                            },
+                            "dayOfYear": {
+                                "type": "integer"
+                            },
+                            "isoWeek": {
+                                "type": "integer"
+                            },
+                            "dstObserved": {
+                                "type": "boolean"
+                            },
+                            "nextTransition": {
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/components/schemas/Transition"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ]
+                            },
+                            "tzdata": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "city",
+                            "utc",
+                            "unixMs",
+                            "date",
+                            "time",
+                            "weekday",
+                            "dayOfYear",
+                            "isoWeek",
+                            "dstObserved",
+                            "nextTransition",
+                            "tzdata"
+                        ]
+                    }
+                ]
+            },
+            "Conversion": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Side"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "status": {
+                                "type": "string",
+                                "enum": [
+                                    "ok",
+                                    "gap",
+                                    "overlap"
+                                ]
+                            },
+                            "requested": {
+                                "type": "string"
+                            },
+                            "tzdata": {
+                                "type": "string"
+                            },
+                            "gapMinutes": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "note": {
+                                "type": "string"
+                            },
+                            "alternative": {
+                                "$ref": "#/components/schemas/Side"
+                            }
+                        },
+                        "required": [
+                            "status",
+                            "requested",
+                            "tzdata"
+                        ]
+                    }
+                ]
+            },
+            "ZoneList": {
+                "type": "object",
+                "properties": {
+                    "asOf": {
+                        "type": "string"
+                    },
+                    "count": {
+                        "type": "integer"
+                    },
+                    "tzdata": {
+                        "type": "string"
+                    },
+                    "zones": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                },
+                                "offsetMinutes": {
+                                    "type": "integer"
+                                },
+                                "offset": {
+                                    "type": "string"
+                                },
+                                "utcOffset": {
+                                    "type": "string"
+                                },
+                                "abbreviation": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "dst": {
+                                    "type": "boolean"
+                                },
+                                "countries": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "mainCity": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "offsetMinutes",
+                                "offset",
+                                "utcOffset",
+                                "abbreviation",
+                                "dst",
+                                "countries",
+                                "mainCity"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "asOf",
+                    "count",
+                    "tzdata",
+                    "zones"
+                ]
+            },
+            "Zone": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "aliases": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "countries": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Country"
+                        }
+                    },
+                    "cities": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "slug": {
+                                    "type": "string"
+                                },
+                                "name": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "slug",
+                                "name"
+                            ]
+                        }
+                    },
+                    "now": {
+                        "allOf": [
+                            {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/Instant"
+                                    },
+                                    {
+                                        "type": "object",
+                                        "properties": {
+                                            "utc": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "utc"
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "standardOffsetMinutes": {
+                                        "type": "integer"
+                                    },
+                                    "dstObserved": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "required": [
+                                    "standardOffsetMinutes",
+                                    "dstObserved"
+                                ]
+                            }
+                        ]
+                    },
+                    "nextTransition": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/Transition"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "year": {
+                        "type": "integer"
+                    },
+                    "dstObservedInYear": {
+                        "type": "boolean"
+                    },
+                    "transitions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Transition"
+                        }
+                    },
+                    "tzdata": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "aliases",
+                    "countries",
+                    "cities",
+                    "now",
+                    "nextTransition",
+                    "year",
+                    "dstObservedInYear",
+                    "transitions",
+                    "tzdata"
+                ]
+            },
+            "CitySearch": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string"
+                    },
+                    "count": {
+                        "type": "integer"
+                    },
+                    "total": {
+                        "type": "integer"
+                    },
+                    "cities": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/City"
+                        }
+                    }
+                },
+                "required": [
+                    "query",
+                    "count",
+                    "total",
+                    "cities"
+                ]
+            },
+            "CityDetail": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/City"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "now": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/Instant"
+                                    },
+                                    {
+                                        "type": "object",
+                                        "properties": {
+                                            "utc": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "utc"
+                                        ]
+                                    }
+                                ]
+                            },
+                            "nextTransition": {
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/components/schemas/Transition"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ]
+                            },
+                            "tzdata": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "now",
+                            "nextTransition",
+                            "tzdata"
+                        ]
+                    }
+                ]
+            },
+            "Lookup": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "object",
+                        "properties": {
+                            "lat": {
+                                "type": "number"
+                            },
+                            "lng": {
+                                "type": "number"
+                            }
+                        },
+                        "required": [
+                            "lat",
+                            "lng"
+                        ]
+                    },
+                    "approximate": {
+                        "type": "boolean"
+                    },
+                    "method": {
+                        "type": "string"
+                    },
+                    "distanceKm": {
+                        "type": "number"
+                    },
+                    "city": {
+                        "$ref": "#/components/schemas/City"
+                    },
+                    "zone": {
+                        "type": "string"
+                    },
+                    "now": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Instant"
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "utc": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "utc"
+                                ]
+                            }
+                        ]
+                    },
+                    "tzdata": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "query",
+                    "approximate",
+                    "method",
+                    "distanceKm",
+                    "city",
+                    "zone",
+                    "now",
+                    "tzdata"
+                ]
+            },
+            "TzData": {
+                "type": "object",
+                "properties": {
+                    "version": {
+                        "type": "string"
+                    },
+                    "source": {
+                        "type": "string"
+                    },
+                    "sourceUrl": {
+                        "type": "string"
+                    },
+                    "dataDate": {
+                        "type": "string"
+                    },
+                    "range": {
+                        "type": "object",
+                        "properties": {
+                            "from": {
+                                "type": "string"
+                            },
+                            "to": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "from",
+                            "to"
+                        ]
+                    },
+                    "zones": {
+                        "type": "integer"
+                    },
+                    "links": {
+                        "type": "integer"
+                    },
+                    "cities": {
+                        "type": "integer"
+                    },
+                    "note": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "version",
+                    "source",
+                    "sourceUrl",
+                    "dataDate",
+                    "range",
+                    "zones",
+                    "links",
+                    "cities",
+                    "note"
+                ]
+            }
+        }
+    }
+}

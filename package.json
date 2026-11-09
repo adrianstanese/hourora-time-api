@@ -1,0 +1,10 @@
+{
+  "name": "hourora-time-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Docs, a tiny client and examples for the free Hourora time zone API",
+  "homepage": "https://hourora.app/en/developers",
+  "license": "MIT",
+  "scripts": { "example": "node examples/node.mjs" }
+}

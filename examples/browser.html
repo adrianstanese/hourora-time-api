@@ -1,0 +1,10 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Hourora API in the browser</title>
+<p>Local time in Tokyo: <output id="t">…</output></p>
+<script type="module">
+  // CORS is open to every origin, so this works from any page (or straight from the file).
+  const r = await fetch("https://hourora.app/api/v1/time?tz=Asia/Tokyo");
+  const d = await r.json();
+  document.getElementById("t").textContent = `${d.time} ${d.abbreviation}`;
+</script>
